@@ -1,0 +1,17 @@
+@Proyecto.AsistenciaUNACH.ApiAsistencia_HostAddress = http://localhost:5256
+
+GET {{Proyecto.AsistenciaUNACH.ApiAsistencia_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### Crear Carrera
+POST http://localhost:5256/api/Carrera
+Content-Type: application/json
+
+{
+  "codigoCarrera": "ARQ01",
+  "nombreCarrera": "Arquitectura",
+  "facultad": "Arquitectura",
+  "modalidad": "Presencial"
+}
