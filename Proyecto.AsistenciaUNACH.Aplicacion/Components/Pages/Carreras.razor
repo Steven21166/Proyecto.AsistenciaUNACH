@@ -1,0 +1,375 @@
+﻿@page "/carreras"
+@rendermode InteractiveAuto
+@inject HttpClient Http
+
+<div class="management-page">
+    <!-- CABECERA -->
+    <div class="management-header">
+        <div>
+            <h2>Gestión de Carreras</h2>
+            <p>Administra los programas académicos de la institución.</p>
+        </div>
+        <div class="management-header-badge">
+            <span>MÓDULO</span>
+        </div>
+    </div>
+
+    <!-- MENSAJES DE ESTADO / ALERTA -->
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="management-message">
+            @mensaje
+        </div>
+    }
+
+    <!-- ACCIONES SUPERIORES (Botón Nuevo) -->
+    @if (!mostrandoFormulario && !mostrandoDetalle)
+    {
+        <div class="management-actions">
+            <button class="btn-management-new" @onclick="PrepararNuevaCarrera">+ Nueva Carrera</button>
+        </div>
+    }
+
+    <!-- FORMULARIO CREAR / EDITAR -->
+    @if (mostrandoFormulario)
+    {
+        <div class="management-form-card">
+            <h4>@(esEdicion ? "Editar Carrera" : "Registrar Nueva Carrera")</h4>
+            <EditForm Model="carreraActual" OnValidSubmit="GuardarCarrera">
+                <DataAnnotationsValidator />
+                
+                <div class="management-form-grid">
+                    <div>
+                        <label>Código de la Carrera</label>
+                        <InputText @bind-Value="carreraActual.CodigoCarrera" class="form-control" placeholder="Ej. ISC-01" />
+                    </div>
+                    <div>
+                        <label>Nombre de la Carrera</label>
+                        <InputText @bind-Value="carreraActual.NombreCarrera" class="form-control" placeholder="Ej. Ingeniería de Sistemas" />
+                    </div>
+                    <div>
+                        <label>Facultad</label>
+                        <InputText @bind-Value="carreraActual.Facultad" class="form-control" placeholder="Ej. Facultad de Ingeniería" />
+                    </div>
+                    <div>
+                        <label>Modalidad</label>
+                        <InputSelect @bind-Value="carreraActual.Modalidad" class="form-control">
+                            <option value="">-- Seleccione una modalidad --</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Virtual">Virtual</option>
+                            <option value="A distancia">A distancia</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="management-form-actions">
+                    <button type="submit" class="btn-management-save">Guardar</button>
+                    <button type="button" class="btn-management-cancel" @onclick="CancelarFormulario">Cancelar</button>
+                </div>
+            </EditForm>
+        </div>
+    }
+
+    <!-- VISTA DE DETALLE INTEGRADO -->
+    @if (mostrandoDetalle && carreraSeleccionada != null)
+    {
+        <div class="management-detail-card">
+            <div class="management-detail-header">
+                <h4>Detalle de la Carrera</h4>
+                <button class="management-detail-close" @onclick="CerrarDetalle">Cerrar Detalle</button>
+            </div>
+
+            <div class="management-detail-info">
+                <div class="management-detail-item">
+                    <span>Código:</span>
+                    <strong>@carreraSeleccionada.CodigoCarrera</strong>
+                </div>
+                <div class="management-detail-item">
+                    <span>Nombre:</span>
+                    <strong>@carreraSeleccionada.NombreCarrera</strong>
+                </div>
+                <div class="management-detail-item">
+                    <span>Facultad:</span>
+                    <strong>@carreraSeleccionada.Facultad</strong>
+                </div>
+                <div class="management-detail-item">
+                    <span>Modalidad:</span>
+                    <strong>@carreraSeleccionada.Modalidad</strong>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- CONTENIDO PRINCIPAL: FILTROS Y TABLA -->
+    <div class="management-content">
+        <!-- FILTROS LATERALES -->
+        <div class="management-filter">
+            <h5>Filtrar Carreras</h5>
+            <div class="mb-3">
+                <label>Buscar</label>
+                <input type="text" class="form-control" @bind="filtroBusqueda" placeholder="Nombre, código o facultad..." />
+            </div>
+            <button class="btn-management-search" @onclick="FiltrarCarreras">Aplicar Filtros</button>
+            <button class="btn-management-clear" @onclick="LimpiarFiltros">Limpiar</button>
+        </div>
+
+        <!-- TABLA DE DATOS -->
+        <div class="management-table-card">
+            <div class="table-responsive">
+                @if (carrerasFiltradas == null)
+                {
+                    <div class="management-empty">
+                        <strong>Cargando carreras...</strong>
+                    </div>
+                }
+                else if (!carrerasFiltradas.Any())
+                {
+                    <div class="management-empty">
+                        <strong>No se encontraron registros</strong>
+                        <span>Intenta crear una nueva carrera o ajustar los filtros.</span>
+                    </div>
+                }
+                else
+                {
+                    <table class="management-table">
+                        <thead>
+                            <tr>
+                                <th>CÓDIGO</th>
+                                <th>NOMBRE</th>
+                                <th>FACULTAD</th>
+                                <th>MODALIDAD</th>
+                                <th style="text-align: right;">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var carrera in carrerasFiltradas)
+                            {
+                                <tr>
+                                    <td><strong>@carrera.CodigoCarrera</strong></td>
+                                    <td>@carrera.NombreCarrera</td>
+                                    <td>@carrera.Facultad</td>
+                                    <td>@carrera.Modalidad</td>
+                                    <td class="management-options-cell" style="text-align: right;">
+                                        <div class="management-options">
+                                            <button class="btn-management-new" style="padding: 5px 10px; font-size: 11px;" @onclick="() => AlternarMenu(carrera.IdCarrera)">
+                                                Opciones ▾
+                                            </button>
+                                            
+                                            @if (menuAbiertoId == carrera.IdCarrera)
+                                            {
+                                                <div class="management-options-menu">
+                                                    <button @onclick="() => VerDetalle(carrera)">Ver Detalle</button>
+                                                    <button @onclick="() => PrepararEditarCarrera(carrera)">Editar</button>
+                                                    <button class="danger-option" @onclick="() => ConfirmarEliminar(carrera)">Eliminar</button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+@if (mostrandoModalEliminar)
+{
+    <div class="confirmation-overlay">
+        <div class="confirmation-modal">
+            <div class="confirmation-icon">!</div>
+            <h3>¿Estás seguro?</h3>
+            <p>Esta acción eliminará la siguiente carrera de forma permanente:</p>
+            
+            <div class="confirmation-detail">
+                <strong>@carreraAEliminar?.NombreCarrera</strong>
+                <span>Código: @carreraAEliminar?.CodigoCarrera</span>
+            </div>
+
+            <p class="confirmation-warning">Esta operación no se puede deshacer.</p>
+
+            <div class="confirmation-actions">
+                <button class="btn-confirmation-cancel" @onclick="CancelarEliminacion">Cancelar</button>
+                <button class="btn-confirmation-delete" @onclick="EjecutarEliminacion">Sí, eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Modelo actualizado con todos los campos de la base de datos
+    public class CarreraModel
+    {
+        public int IdCarrera { get; set; }
+        public string CodigoCarrera { get; set; } = string.Empty;
+        public string NombreCarrera { get; set; } = string.Empty;
+        public string Facultad { get; set; } = string.Empty;
+        public string Modalidad { get; set; } = string.Empty;
+    }
+
+    private List<CarreraModel>? carreras;
+    private List<CarreraModel>? carrerasFiltradas;
+    private CarreraModel carreraActual = new();
+    private CarreraModel? carreraSeleccionada;
+    private CarreraModel? carreraAEliminar;
+
+    private bool mostrandoFormulario = false;
+    private bool mostrandoDetalle = false;
+    private bool mostrandoModalEliminar = false;
+    private bool esEdicion = false;
+    
+    private int? menuAbiertoId = null;
+    private string filtroBusqueda = string.Empty;
+    private string mensaje = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCarreras();
+    }
+
+    private async Task CargarCarreras()
+    {
+        try
+        {
+            mensaje = string.Empty;
+            carreras = await Http.GetFromJsonAsync<List<CarreraModel>>("api/Carrera");
+            carrerasFiltradas = carreras;
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al conectar con la API: {ex.Message}";
+            carreras = new List<CarreraModel>();
+            carrerasFiltradas = carreras;
+        }
+    }
+
+    private void PrepararNuevaCarrera()
+    {
+        carreraActual = new CarreraModel();
+        esEdicion = false;
+        mostrandoFormulario = true;
+        mostrandoDetalle = false;
+        menuAbiertoId = null;
+    }
+
+    private void PrepararEditarCarrera(CarreraModel carrera)
+    {
+        carreraActual = new CarreraModel 
+        { 
+            IdCarrera = carrera.IdCarrera, 
+            CodigoCarrera = carrera.CodigoCarrera, 
+            NombreCarrera = carrera.NombreCarrera,
+            Facultad = carrera.Facultad,
+            Modalidad = carrera.Modalidad
+        };
+        esEdicion = true;
+        mostrandoFormulario = true;
+        mostrandoDetalle = false;
+        menuAbiertoId = null;
+    }
+
+    private void CancelarFormulario()
+    {
+        mostrandoFormulario = false;
+    }
+
+    private async Task GuardarCarrera()
+    {
+        try
+        {
+            if (esEdicion)
+            {
+                await Http.PutAsJsonAsync($"api/Carrera/{carreraActual.IdCarrera}", carreraActual);
+                mensaje = "Carrera actualizada exitosamente.";
+            }
+            else
+            {
+                await Http.PostAsJsonAsync("api/Carrera", carreraActual);
+                mensaje = "Carrera registrada exitosamente.";
+            }
+
+            mostrandoFormulario = false;
+            await CargarCarreras();
+        }
+        catch (Exception)
+        {
+            mensaje = "Ocurrió un error al guardar los datos en el servidor.";
+        }
+    }
+
+    private void VerDetalle(CarreraModel carrera)
+    {
+        carreraSeleccionada = carrera;
+        mostrandoDetalle = true;
+        mostrandoFormulario = false;
+        menuAbiertoId = null;
+    }
+
+    private void CerrarDetalle()
+    {
+        mostrandoDetalle = false;
+        carreraSeleccionada = null;
+    }
+
+    private void ConfirmarEliminar(CarreraModel carrera)
+    {
+        carreraAEliminar = carrera;
+        mostrandoModalEliminar = true;
+        menuAbiertoId = null;
+    }
+
+    private void CancelarEliminacion()
+    {
+        mostrandoModalEliminar = false;
+        carreraAEliminar = null;
+    }
+
+    private async Task EjecutarEliminacion()
+    {
+        if (carreraAEliminar != null)
+        {
+            try
+            {
+                await Http.DeleteAsync($"api/Carrera/{carreraAEliminar.IdCarrera}");
+                mensaje = "Carrera eliminada correctamente.";
+                await CargarCarreras();
+            }
+            catch (Exception)
+            {
+                mensaje = "Error al intentar eliminar la carrera.";
+            }
+        }
+        mostrandoModalEliminar = false;
+        carreraAEliminar = null;
+    }
+
+    private void AlternarMenu(int id)
+    {
+        menuAbiertoId = menuAbiertoId == id ? null : id;
+    }
+
+    private void FiltrarCarreras()
+    {
+        if (string.IsNullOrWhiteSpace(filtroBusqueda))
+        {
+            carrerasFiltradas = carreras;
+        }
+        else
+        {
+            carrerasFiltradas = carreras?
+                .Where(c => c.NombreCarrera.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                            c.CodigoCarrera.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                            c.Facultad.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void LimpiarFiltros()
+    {
+        filtroBusqueda = string.Empty;
+        carrerasFiltradas = carreras;
+    }
+}

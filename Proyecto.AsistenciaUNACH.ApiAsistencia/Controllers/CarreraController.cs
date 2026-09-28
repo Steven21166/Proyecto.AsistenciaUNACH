@@ -19,7 +19,7 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Carrera>>> ObtenerTodas()
         {
-            var carreras = await _carreraRepositorio.ObtenerTodas();
+            var carreras = await _carreraRepositorio.ObtenerCarrerasAsync();
 
             return Ok(carreras);
         }
@@ -28,7 +28,7 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Carrera>> ObtenerPorId(int id)
         {
-            var carrera = await _carreraRepositorio.ObtenerPorId(id);
+            var carrera = await _carreraRepositorio.ObtenerCarreraPorIdAsync(id);
 
             if (carrera == null)
                 return NotFound();
@@ -40,12 +40,12 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpPost]
         public async Task<ActionResult<Carrera>> Crear(Carrera carrera)
         {
-            var nuevaCarrera = await _carreraRepositorio.Crear(carrera);
+            await _carreraRepositorio.AgregarCarreraAsync(carrera);
 
             return CreatedAtAction(
                 nameof(ObtenerPorId),
-                new { id = nuevaCarrera.IdCarrera },
-                nuevaCarrera
+                new { id = carrera.IdCarrera },
+                carrera
             );
         }
 
@@ -56,10 +56,14 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
             if (id != carrera.IdCarrera)
                 return BadRequest();
 
-            var actualizado = await _carreraRepositorio.Actualizar(carrera);
-
-            if (!actualizado)
+            try
+            {
+                await _carreraRepositorio.ActualizarCarreraAsync(carrera);
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }
@@ -68,10 +72,14 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Eliminar(int id)
         {
-            var eliminado = await _carreraRepositorio.Eliminar(id);
-
-            if (!eliminado)
+            try
+            {
+                await _carreraRepositorio.EliminarCarreraAsync(id);
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }

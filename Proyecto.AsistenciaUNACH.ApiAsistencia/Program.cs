@@ -25,6 +25,10 @@ builder.Services.AddDbContext<AsistenciaUNACHContext>(options =>
 builder.Services.AddScoped<ICarreraRepositorio, CarreraRepositorio>();
 builder.Services.AddScoped<IAsignaturaRepositorio, AsignaturaRepositorio>();
 builder.Services.AddScoped<IDocenteRepositorio, DocenteRepositorio>();
+builder.Services.AddScoped<IEstudianteRepositorio, EstudianteRepositorio>();
+builder.Services.AddScoped<IAsistenciaEstudianteRepositorio, AsistenciaEstudianteRepositorio>();
+builder.Services.AddScoped<IDetalleMatriculaRepositorio, DetalleMatriculaRepositorio>();
+builder.Services.AddScoped<IDocenteAsignaturaRepositorio, DocenteAsignaturaRepositorio>();
 
 var app = builder.Build();
 

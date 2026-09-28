@@ -1,0 +1,247 @@
+﻿@page "/asignaturas"
+@rendermode InteractiveAuto
+@inject HttpClient Http
+
+<div class="management-page">
+    <div class="management-header">
+        <div>
+            <h2>Gestión de Asignaturas</h2>
+            <p>Control y consulta de materias académicas.</p>
+        </div>
+        <div class="management-header-badge">
+            <span>MÓDULO</span>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="management-message">@mensaje</div>
+    }
+
+    @if (!mostrandoFormulario && !mostrandoDetalle)
+    {
+        <div class="management-actions">
+            <button class="btn-management-new" @onclick="PrepararNuevaAsignatura">+ Nueva Asignatura</button>
+        </div>
+    }
+
+    @if (mostrandoFormulario)
+    {
+        <div class="management-form-card">
+            <h4>@(esEdicion ? "Editar Asignatura" : "Registrar Nueva Asignatura")</h4>
+            <EditForm Model="asignaturaActual" OnValidSubmit="GuardarAsignatura">
+                <DataAnnotationsValidator />
+                
+                <div class="management-form-grid">
+                    <div>
+                        <label>Código de Asignatura</label>
+                        <InputText @bind-Value="asignaturaActual.CodigoAsignatura" class="form-control" placeholder="Ej. SIS-101" />
+                    </div>
+                    <div>
+                        <label>Nombre de la Asignatura</label>
+                        <InputText @bind-Value="asignaturaActual.NombreAsignatura" class="form-control" placeholder="Ej. Programación I" />
+                    </div>
+                    <div>
+                        <label>Semestre</label>
+                        <InputNumber @bind-Value="asignaturaActual.Semestre" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="management-form-actions">
+                    <button type="submit" class="btn-management-save">Guardar</button>
+                    <button type="button" class="btn-management-cancel" @onclick="() => mostrandoFormulario = false">Cancelar</button>
+                </div>
+            </EditForm>
+        </div>
+    }
+
+    @if (mostrandoDetalle && asignaturaSeleccionada != null)
+    {
+        <div class="management-detail-card">
+            <div class="management-detail-header">
+                <h4>Detalle de la Asignatura</h4>
+                <button class="management-detail-close" @onclick="() => mostrandoDetalle = false">Cerrar Detalle</button>
+            </div>
+
+            <div class="management-detail-info">
+                <div class="management-detail-item">
+                    <span>Código:</span>
+                    <strong>@asignaturaSeleccionada.CodigoAsignatura</strong>
+                </div>
+                <div class="management-detail-item">
+                    <span>Nombre:</span>
+                    <strong>@asignaturaSeleccionada.NombreAsignatura</strong>
+                </div>
+                <div class="management-detail-item">
+                    <span>Semestre:</span>
+                    <strong>@asignaturaSeleccionada.Semestre</strong>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="management-content">
+        <div class="management-filter">
+            <h5>Filtrar Asignaturas</h5>
+            <div class="mb-3">
+                <label>Buscar</label>
+                <input type="text" class="form-control" @bind="filtroBusqueda" placeholder="Nombre o código..." />
+            </div>
+            <button class="btn-management-search" @onclick="FiltrarAsignaturas">Aplicar Filtros</button>
+            <button class="btn-management-clear" @onclick="LimpiarFiltros">Limpiar</button>
+        </div>
+
+        <div class="management-table-card">
+            <div class="table-responsive">
+                @if (listaFiltrada == null)
+                {
+                    <div class="management-empty"><strong>Cargando asignaturas...</strong></div>
+                }
+                else if (!listaFiltrada.Any())
+                {
+                    <div class="management-empty"><strong>No se encontraron registros</strong></div>
+                }
+                else
+                {
+                    <table class="management-table">
+                        <thead>
+                            <tr>
+                                <th>CÓDIGO</th>
+                                <th>NOMBRE DE ASIGNATURA</th>
+                                <th>SEMESTRE</th>
+                                <th style="text-align: right;">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var asig in listaFiltrada)
+                            {
+                                <tr>
+                                    <td><strong>@asig.CodigoAsignatura</strong></td>
+                                    <td>@asig.NombreAsignatura</td>
+                                    <td>@asig.Semestre</td>
+                                    <td class="management-options-cell" style="text-align: right;">
+                                        <div class="management-options">
+                                            <button class="btn-management-new" style="padding: 5px 10px; font-size: 11px;" @onclick="() => AlternarMenu(asig.IdAsignatura)">
+                                                Opciones ▾
+                                            </button>
+                                            
+                                            @if (menuAbiertoId == asig.IdAsignatura)
+                                            {
+                                                <div class="management-options-menu">
+                                                    <button @onclick="() => VerDetalle(asig)">Ver Detalle</button>
+                                                    <button @onclick="() => PrepararEditarAsignatura(asig)">Editar</button>
+                                                    <button class="danger-option" @onclick="() => ConfirmarEliminar(asig)">Eliminar</button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (mostrandoModalEliminar)
+{
+    <div class="confirmation-overlay">
+        <div class="confirmation-modal">
+            <div class="confirmation-icon">!</div>
+            <h3>¿Estás seguro?</h3>
+            <p>Se eliminará la asignatura: <strong>@asignaturaAEliminar?.NombreAsignatura</strong></p>
+            <div class="confirmation-actions">
+                <button class="btn-confirmation-cancel" @onclick="() => mostrandoModalEliminar = false">Cancelar</button>
+                <button class="btn-confirmation-delete" @onclick="EjecutarEliminacion">Sí, eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Usamos el mismo namespace de tus modelos para evitar errores de mapeo
+    public class AsignaturaModel 
+    { 
+        public int IdAsignatura { get; set; } 
+        public string CodigoAsignatura { get; set; } = string.Empty; 
+        public string NombreAsignatura { get; set; } = string.Empty; 
+        public int Semestre { get; set; } // <-- Ahora es de tipo int
+    }
+
+    private List<AsignaturaModel>? listaAsignaturas, listaFiltrada;
+    private AsignaturaModel asignaturaActual = new();
+    private AsignaturaModel? asignaturaSeleccionada, asignaturaAEliminar;
+    private bool mostrandoFormulario, mostrandoDetalle, mostrandoModalEliminar, esEdicion;
+    private int? menuAbiertoId;
+    private string filtroBusqueda = "", mensaje = "";
+
+    protected override async Task OnInitializedAsync() => await CargarAsignaturas();
+
+    private async Task CargarAsignaturas()
+    {
+        try
+        {
+            mensaje = "";
+            // Ruta exacta basada en tu controlador: api/Asignatura
+            listaAsignaturas = await Http.GetFromJsonAsync<List<AsignaturaModel>>("api/Asignatura");
+            listaFiltrada = listaAsignaturas;
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al conectar con la API: {ex.Message}";
+            listaAsignaturas = new();
+            listaFiltrada = listaAsignaturas;
+        }
+    }
+
+    private void PrepararNuevaAsignatura() { asignaturaActual = new(); esEdicion = false; mostrandoFormulario = true; mostrandoDetalle = false; menuAbiertoId = null; }
+    
+    private void PrepararEditarAsignatura(AsignaturaModel asig) 
+    { 
+        asignaturaActual = new() { IdAsignatura = asig.IdAsignatura, CodigoAsignatura = asig.CodigoAsignatura, NombreAsignatura = asig.NombreAsignatura, Semestre = asig.Semestre }; 
+        esEdicion = true; mostrandoFormulario = true; mostrandoDetalle = false; menuAbiertoId = null; 
+    }
+
+    private async Task GuardarAsignatura()
+    {
+        try
+        {
+            if (esEdicion)
+                await Http.PutAsJsonAsync($"api/Asignatura/{asignaturaActual.IdAsignatura}", asignaturaActual);
+            else
+                await Http.PostAsJsonAsync("api/Asignatura", asignaturaActual);
+
+            mostrandoFormulario = false;
+            await CargarAsignaturas();
+        }
+        catch 
+        { 
+            mensaje = "Error al guardar la asignatura en el servidor."; 
+        }
+    }
+
+    private void VerDetalle(AsignaturaModel asig) { asignaturaSeleccionada = asig; mostrandoDetalle = true; mostrandoFormulario = false; menuAbiertoId = null; }
+    private void ConfirmarEliminar(AsignaturaModel asig) { asignaturaAEliminar = asig; mostrandoModalEliminar = true; menuAbiertoId = null; }
+    
+    private async Task EjecutarEliminacion()
+    {
+        if (asignaturaAEliminar != null)
+        {
+            try
+            {
+                await Http.DeleteAsync($"api/Asignatura/{asignaturaAEliminar.IdAsignatura}");
+                await CargarAsignaturas();
+            }
+            catch { mensaje = "Error al eliminar."; }
+        }
+        mostrandoModalEliminar = false;
+    }
+
+    private void AlternarMenu(int id) => menuAbiertoId = menuAbiertoId == id ? null : id;
+    
+    private void FiltrarAsignaturas() => listaFiltrada = string.IsNullOrWhiteSpace(filtroBusqueda) ? listaAsignaturas : listaAsignaturas?.Where(a => a.NombreAsignatura.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase) || a.CodigoAsignatura.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+    
+    private void LimpiarFiltros() { filtroBusqueda = ""; listaFiltrada = listaAsignaturas; }
+}

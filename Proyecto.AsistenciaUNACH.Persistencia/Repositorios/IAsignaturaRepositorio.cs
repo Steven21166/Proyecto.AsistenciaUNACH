@@ -7,14 +7,10 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
 {
     public interface IAsignaturaRepositorio
     {
-        Task<List<Asignatura>> ObtenerTodas();
-
-        Task<Asignatura?> ObtenerPorId(int id);
-
-        Task<Asignatura> Crear(Asignatura asignatura);
-
-        Task<bool> Actualizar(Asignatura asignatura);
-
-        Task<bool> Eliminar(int id);
+        Task<IEnumerable<Asignatura>> ObtenerAsignaturasAsync();
+        Task<Asignatura?> ObtenerAsignaturaPorIdAsync(int id);
+        Task AgregarAsignaturaAsync(Asignatura asignatura);
+        Task ActualizarAsignaturaAsync(Asignatura asignatura);
+        Task EliminarAsignaturaAsync(int id);
     }
 }

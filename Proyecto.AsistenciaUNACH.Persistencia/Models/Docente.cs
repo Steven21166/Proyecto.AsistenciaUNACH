@@ -21,17 +21,9 @@ public partial class Docente
 
     public int IdCarrera { get; set; }
 
-    public int IdAsignatura { get; set; }
+    public virtual ICollection<AsistenciaEstudiante> AsistenciaEstudiantes { get; set; } = new List<AsistenciaEstudiante>();
 
-    public DateOnly? FechaAsistencia { get; set; }
-
-    public TimeOnly? HoraEntrada { get; set; }
-
-    public TimeOnly? HoraSalida { get; set; }
-
-    public string EstadoAsistencia { get; set; }
-
-    public virtual Asignatura IdAsignaturaNavigation { get; set; }
+    public virtual ICollection<DocenteAsignatura> DocenteAsignaturas { get; set; } = new List<DocenteAsignatura>();
 
     public virtual Carrera IdCarreraNavigation { get; set; }
 }

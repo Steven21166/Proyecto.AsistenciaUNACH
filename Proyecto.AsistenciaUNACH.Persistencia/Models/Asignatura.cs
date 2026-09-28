@@ -15,5 +15,9 @@ public partial class Asignatura
 
     public int? Semestre { get; set; }
 
-    public virtual ICollection<Docente> Docentes { get; set; } = new List<Docente>();
+    public virtual ICollection<AsistenciaEstudiante> AsistenciaEstudiantes { get; set; } = new List<AsistenciaEstudiante>();
+
+    public virtual ICollection<DetalleMatricula> DetalleMatriculas { get; set; } = new List<DetalleMatricula>();
+
+    public virtual ICollection<DocenteAsignatura> DocenteAsignaturas { get; set; } = new List<DocenteAsignatura>();
 }

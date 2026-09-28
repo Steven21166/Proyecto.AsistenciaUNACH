@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="Proyecto.AsistenciaUNACH.ApiAsistencia/Proyecto.AsistenciaUNACH.ApiAsistencia.csproj" Id="8b9a27f1-0998-4615-ba6e-bfa0a326ca0f" />
-  <Project Path="Proyecto.AsistenciaUNACH.Aplicacion/Proyecto.AsistenciaUNACH.Aplicacion.csproj" Id="e8412fdf-dc8a-4f17-91e8-a9a5389052b2" />
+  <Project Path="Proyecto.AsistenciaUNACH.Aplicacion/Proyecto.AsistenciaUNACH.Aplicacion.csproj" Id="81be2317-99d4-4835-8e84-5d0b444fb305" />
   <Project Path="Proyecto.AsistenciaUNACH.DemoConsola/Proyecto.AsistenciaUNACH.DemoConsola.csproj" Id="3fce3ea7-3986-4c3b-a937-b961d1178a5c" />
   <Project Path="Proyecto.AsistenciaUNACH.Persistencia/Proyecto.AsistenciaUNACH.Persistencia.csproj" Id="510ca4ef-7b8c-4a11-baa2-a7c8a3ba1b9f" />
 </Solution>

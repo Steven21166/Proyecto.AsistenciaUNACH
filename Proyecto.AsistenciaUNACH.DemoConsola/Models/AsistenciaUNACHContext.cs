@@ -15,9 +15,17 @@ public partial class AsistenciaUNACHContext : DbContext
 
     public virtual DbSet<Asignatura> Asignaturas { get; set; }
 
+    public virtual DbSet<AsistenciaEstudiante> AsistenciaEstudiantes { get; set; }
+
     public virtual DbSet<Carrera> Carreras { get; set; }
 
+    public virtual DbSet<DetalleMatricula> DetalleMatriculas { get; set; }
+
     public virtual DbSet<Docente> Docentes { get; set; }
+
+    public virtual DbSet<DocenteAsignatura> DocenteAsignaturas { get; set; }
+
+    public virtual DbSet<Estudiante> Estudiantes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +49,40 @@ public partial class AsistenciaUNACHContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("nombreAsignatura");
             entity.Property(e => e.Semestre).HasColumnName("semestre");
+        });
+
+        modelBuilder.Entity<AsistenciaEstudiante>(entity =>
+        {
+            entity.HasKey(e => e.IdAsistencia).HasName("PK__Asistenc__4E1AB8941B931A28");
+
+            entity.ToTable("AsistenciaEstudiante");
+
+            entity.Property(e => e.IdAsistencia).HasColumnName("idAsistencia");
+            entity.Property(e => e.EstadoAsistencia)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("estadoAsistencia");
+            entity.Property(e => e.FechaAsistencia).HasColumnName("fechaAsistencia");
+            entity.Property(e => e.HoraRegistro).HasColumnName("horaRegistro");
+            entity.Property(e => e.IdAsignatura).HasColumnName("idAsignatura");
+            entity.Property(e => e.IdDocente).HasColumnName("idDocente");
+            entity.Property(e => e.IdEstudiante).HasColumnName("idEstudiante");
+
+            entity.HasOne(d => d.IdAsignaturaNavigation).WithMany(p => p.AsistenciaEstudiantes)
+                .HasForeignKey(d => d.IdAsignatura)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AsistEst_Asignatura");
+
+            entity.HasOne(d => d.IdDocenteNavigation).WithMany(p => p.AsistenciaEstudiantes)
+                .HasForeignKey(d => d.IdDocente)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AsistEst_Docente");
+
+            entity.HasOne(d => d.IdEstudianteNavigation).WithMany(p => p.AsistenciaEstudiantes)
+                .HasForeignKey(d => d.IdEstudiante)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AsistEst_Estudiante");
         });
 
         modelBuilder.Entity<Carrera>(entity =>
@@ -73,6 +115,27 @@ public partial class AsistenciaUNACHContext : DbContext
                 .HasColumnName("nombreCarrera");
         });
 
+        modelBuilder.Entity<DetalleMatricula>(entity =>
+        {
+            entity.HasKey(e => e.IdMatricula).HasName("PK__DetalleM__72013C99BFC3196B");
+
+            entity.ToTable("DetalleMatricula");
+
+            entity.Property(e => e.IdMatricula).HasColumnName("idMatricula");
+            entity.Property(e => e.IdAsignatura).HasColumnName("idAsignatura");
+            entity.Property(e => e.IdEstudiante).HasColumnName("idEstudiante");
+
+            entity.HasOne(d => d.IdAsignaturaNavigation).WithMany(p => p.DetalleMatriculas)
+                .HasForeignKey(d => d.IdAsignatura)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Matricula_Asignatura");
+
+            entity.HasOne(d => d.IdEstudianteNavigation).WithMany(p => p.DetalleMatriculas)
+                .HasForeignKey(d => d.IdEstudiante)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Matricula_Estudiante");
+        });
+
         modelBuilder.Entity<Docente>(entity =>
         {
             entity.HasKey(e => e.IdDocente).HasName("PK__Docente__595F5B9C9EB76891");
@@ -103,14 +166,6 @@ public partial class AsistenciaUNACHContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("correo");
-            entity.Property(e => e.EstadoAsistencia)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasColumnName("estadoAsistencia");
-            entity.Property(e => e.FechaAsistencia).HasColumnName("fechaAsistencia");
-            entity.Property(e => e.HoraEntrada).HasColumnName("horaEntrada");
-            entity.Property(e => e.HoraSalida).HasColumnName("horaSalida");
-            entity.Property(e => e.IdAsignatura).HasColumnName("idAsignatura");
             entity.Property(e => e.IdCarrera).HasColumnName("idCarrera");
             entity.Property(e => e.Nombres)
                 .IsRequired()
@@ -118,15 +173,69 @@ public partial class AsistenciaUNACHContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("nombres");
 
-            entity.HasOne(d => d.IdAsignaturaNavigation).WithMany(p => p.Docentes)
-                .HasForeignKey(d => d.IdAsignatura)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Docente_Asignatura");
-
             entity.HasOne(d => d.IdCarreraNavigation).WithMany(p => p.Docentes)
                 .HasForeignKey(d => d.IdCarrera)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Docente_Carrera");
+        });
+
+        modelBuilder.Entity<DocenteAsignatura>(entity =>
+        {
+            entity.HasKey(e => e.IdDocenteAsignatura).HasName("PK__DocenteA__7B56DF4A805275D4");
+
+            entity.ToTable("DocenteAsignatura");
+
+            entity.Property(e => e.IdDocenteAsignatura).HasColumnName("idDocenteAsignatura");
+            entity.Property(e => e.IdAsignatura).HasColumnName("idAsignatura");
+            entity.Property(e => e.IdDocente).HasColumnName("idDocente");
+
+            entity.HasOne(d => d.IdAsignaturaNavigation).WithMany(p => p.DocenteAsignaturas)
+                .HasForeignKey(d => d.IdAsignatura)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DocAsig_Asignatura");
+
+            entity.HasOne(d => d.IdDocenteNavigation).WithMany(p => p.DocenteAsignaturas)
+                .HasForeignKey(d => d.IdDocente)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DocAsig_Docente");
+        });
+
+        modelBuilder.Entity<Estudiante>(entity =>
+        {
+            entity.HasKey(e => e.IdEstudiante).HasName("PK__Estudian__AEFFDBC5AC30BEAE");
+
+            entity.ToTable("Estudiante");
+
+            entity.HasIndex(e => e.CodigoEstudiante, "UQ__Estudian__449AA8695023BBB8").IsUnique();
+
+            entity.Property(e => e.IdEstudiante).HasColumnName("idEstudiante");
+            entity.Property(e => e.Apellidos)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("apellidos");
+            entity.Property(e => e.CodigoEstudiante)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("codigoEstudiante");
+            entity.Property(e => e.Estado)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Activo")
+                .HasColumnName("estado");
+            entity.Property(e => e.IdCarrera).HasColumnName("idCarrera");
+            entity.Property(e => e.Nombres)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombres");
+            entity.Property(e => e.Semestre).HasColumnName("semestre");
+
+            entity.HasOne(d => d.IdCarreraNavigation).WithMany(p => p.Estudiantes)
+                .HasForeignKey(d => d.IdCarrera)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Estudiante_Carrera");
         });
 
         OnModelCreatingPartial(modelBuilder);

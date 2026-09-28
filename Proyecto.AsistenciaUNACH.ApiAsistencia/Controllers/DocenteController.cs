@@ -9,18 +9,21 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
     public class DocenteController : ControllerBase
     {
         private readonly IDocenteRepositorio _docenteRepositorio;
+        private readonly IDocenteAsignaturaRepositorio _docenteAsignaturaRepositorio;
 
-        public DocenteController(IDocenteRepositorio docenteRepositorio)
+        public DocenteController(
+            IDocenteRepositorio docenteRepositorio,
+            IDocenteAsignaturaRepositorio docenteAsignaturaRepositorio)
         {
             _docenteRepositorio = docenteRepositorio;
+            _docenteAsignaturaRepositorio = docenteAsignaturaRepositorio;
         }
 
         // GET: api/Docente
         [HttpGet]
         public async Task<ActionResult<List<Docente>>> ObtenerTodos()
         {
-            var docentes = await _docenteRepositorio.ObtenerTodos();
-
+            var docentes = await _docenteRepositorio.ObtenerDocentesAsync();
             return Ok(docentes);
         }
 
@@ -28,7 +31,7 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Docente>> ObtenerPorId(int id)
         {
-            var docente = await _docenteRepositorio.ObtenerPorId(id);
+            var docente = await _docenteRepositorio.ObtenerDocentePorIdAsync(id);
 
             if (docente == null)
                 return NotFound();
@@ -40,30 +43,44 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpPost]
         public async Task<ActionResult<Docente>> Crear(Docente docente)
         {
-            var nuevoDocente =
-                await _docenteRepositorio.Crear(docente);
+            // 1. Guardamos primero el docente para obtener su IdDocente generado
+            await _docenteRepositorio.AgregarDocenteAsync(docente);
+
+            // 2. Si vienen asignaturas asociadas en la colección, las registramos
+            if (docente.DocenteAsignaturas != null && docente.DocenteAsignaturas.Any())
+            {
+                foreach (var asignacion in docente.DocenteAsignaturas)
+                {
+                    asignacion.IdDocente = docente.IdDocente;
+                    await _docenteAsignaturaRepositorio.AsignarMateriaADocenteAsync(asignacion);
+                }
+            }
 
             return CreatedAtAction(
                 nameof(ObtenerPorId),
-                new { id = nuevoDocente.IdDocente },
-                nuevoDocente
+                new { id = docente.IdDocente },
+                docente
             );
         }
 
         // PUT: api/Docente/1
         [HttpPut("{id}")]
-        public async Task<IActionResult> Actualizar(
-            int id,
-            Docente docente)
+        public async Task<IActionResult> Actualizar(int id, Docente docente)
         {
             if (id != docente.IdDocente)
                 return BadRequest();
 
-            var actualizado =
-                await _docenteRepositorio.Actualizar(docente);
+            try
+            {
+                await _docenteRepositorio.ActualizarDocenteAsync(docente);
 
-            if (!actualizado)
+                // Opcional si en tu actualización de Blazor manejas también la lista de asignaturas:
+                // Puedes limpiar las anteriores y volver a registrar las nuevas si tu lógica lo requiere.
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }
@@ -72,11 +89,14 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Eliminar(int id)
         {
-            var eliminado =
-                await _docenteRepositorio.Eliminar(id);
-
-            if (!eliminado)
+            try
+            {
+                await _docenteRepositorio.EliminarDocenteAsync(id);
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }

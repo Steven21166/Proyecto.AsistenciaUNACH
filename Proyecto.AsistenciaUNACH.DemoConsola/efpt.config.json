@@ -23,11 +23,27 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[AsistenciaEstudiante]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Carrera]",
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[DetalleMatricula]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Docente]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DocenteAsignatura]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Estudiante]",
          "ObjectType": 0
       }
    ],

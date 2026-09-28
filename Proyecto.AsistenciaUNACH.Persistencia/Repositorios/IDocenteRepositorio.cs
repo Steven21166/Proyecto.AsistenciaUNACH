@@ -7,14 +7,10 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
 {
     public interface IDocenteRepositorio
     {
-        Task<List<Docente>> ObtenerTodos();
-
-        Task<Docente?> ObtenerPorId(int id);
-
-        Task<Docente> Crear(Docente docente);
-
-        Task<bool> Actualizar(Docente docente);
-
-        Task<bool> Eliminar(int id);
+        Task<IEnumerable<Docente>> ObtenerDocentesAsync();
+        Task<Docente?> ObtenerDocentePorIdAsync(int id);
+        Task AgregarDocenteAsync(Docente docente);
+        Task ActualizarDocenteAsync(Docente docente);
+        Task EliminarDocenteAsync(int id);
     }
 }

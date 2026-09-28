@@ -1,0 +1,551 @@
+﻿@page "/estudiantes"
+@rendermode InteractiveAuto
+@inject HttpClient Http
+
+<div class="management-page">
+    <!-- CABECERA -->
+    <div class="management-header">
+        <div>
+            <h2>Gestión de Estudiantes</h2>
+            <p>Control, registro y asignación académica de alumnos.</p>
+        </div>
+        <div class="management-header-badge">
+            <span>MÓDULO</span>
+        </div>
+    </div>
+
+    <!-- MENSAJES DE ESTADO / ALERTA -->
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="management-message">
+            @mensaje
+        </div>
+    }
+
+    <!-- ACCIONES SUPERIORES (Botón Nuevo) -->
+    @if (!mostrandoFormulario && !mostrandoDetalle)
+    {
+        <div class="management-actions">
+            <button class="btn-management-new" @onclick="PrepararNuevoEstudiante">+ Nuevo Estudiante</button>
+        </div>
+    }
+
+    <!-- FORMULARIO CREAR / EDITAR -->
+    @if (mostrandoFormulario)
+    {
+        <div class="management-form-card">
+            <h4>@(esEdicion ? "Editar Estudiante" : "Registrar Nuevo Estudiante")</h4>
+            <EditForm Model="estudianteActual" OnValidSubmit="GuardarEstudiante">
+                <DataAnnotationsValidator />
+                
+                <div class="management-form-grid">
+                    <div>
+                        <label>Matrícula / Código</label>
+                        <InputText @bind-Value="estudianteActual.CodigoEstudiante" class="form-control" placeholder="Ej. 2026-001" />
+                    </div>
+                    <div>
+                        <label>Nombres</label>
+                        <InputText @bind-Value="estudianteActual.Nombres" class="form-control" placeholder="Ej. Ana" />
+                    </div>
+                    <div>
+                        <label>Apellidos</label>
+                        <InputText @bind-Value="estudianteActual.Apellidos" class="form-control" placeholder="Ej. Gómez" />
+                    </div>
+                    <div>
+                        <label>Semestre (1 al 10)</label>
+                        <InputSelect @bind-Value="estudianteActual.Semestre" class="form-control">
+                            <option value="0">-- Seleccione el Semestre --</option>
+                            @for (int i = 1; i <= 10; i++)
+                            {
+                                <option value="@i">Semestre @i</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div>
+                        <label>Estado</label>
+                        <InputSelect @bind-Value="estudianteActual.Estado" class="form-control">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                            <option value="Retirado">Retirado</option>
+                        </InputSelect>
+                    </div>
+                    <div>
+                        <label>Carrera Asignada</label>
+                        <InputSelect @bind-Value="estudianteActual.IdCarrera" class="form-control">
+                            <option value="0">-- Seleccione una carrera --</option>
+                            @if (listaCarreras != null)
+                            {
+                                @foreach (var carrera in listaCarreras)
+                                {
+                                    <option value="@carrera.IdCarrera">@carrera.NombreCarrera</option>
+                                }
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN DE ASIGNATURAS FILTRADAS POR SEMESTRE -->
+                <div class="mt-3">
+                    <label><strong>Asignaturas Disponibles / Asignadas:</strong></label>
+                    <p class="text-muted" style="font-size: 12px;">Mostrando asignaturas del semestre seleccionado (@estudianteActual.Semestre):</p>
+                    
+                    <div class="mb-2" style="max-width: 400px;">
+                        <input type="text" class="form-control form-control-sm" placeholder="🔍 Buscar asignatura..." 
+                               @bind="filtroAsignaturaForm" @bind:event="oninput" />
+                    </div>
+
+                    <div class="management-form-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 4px;">
+                        @if (AsignaturasFiltradasPorSemestre == null || !AsignaturasFiltradasPorSemestre.Any())
+                        {
+                            <span class="text-muted">No hay asignaturas registradas para este semestre.</span>
+                        }
+                        else
+                        {
+                            @foreach (var asignatura in AsignaturasFiltradasPorSemestre)
+                            {
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="asig_est_@asignatura.IdAsignatura"
+                                           checked="@estudianteActual.IdsAsignaturasSeleccionadas.Contains(asignatura.IdAsignatura)"
+                                           @onchange="(e => CambiarSeleccionAsignatura(asignatura.IdAsignatura, e.Value))" />
+                                    <label class="form-check-label" for="asig_est_@asignatura.IdAsignatura">@asignatura.NombreAsignatura (Sem. @asignatura.Semestre)</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="management-form-actions mt-3">
+                    <button type="submit" class="btn-management-save">Guardar</button>
+                    <button type="button" class="btn-management-cancel" @onclick="CancelarFormulario">Cancelar</button>
+                </div>
+            </EditForm>
+        </div>
+    }
+
+    <!-- VISTA DE DETALLE EN DOS FILAS Y CUADRO DE ASIGNATURAS -->
+    @if (mostrandoDetalle && estudianteSeleccionado != null)
+    {
+        <div class="management-detail-card">
+            <div class="management-detail-header">
+                <h4>Detalle del Estudiante</h4>
+                <button class="management-detail-close" @onclick="CerrarDetalle">Cerrar Detalle</button>
+            </div>
+
+            <!-- Datos principales en dos columnas -->
+            <div class="management-form-grid" style="margin-top: 15px;">
+                <div>
+                    <span>Código / Matrícula:</span><br />
+                    <strong>@estudianteSeleccionado.CodigoEstudiante</strong>
+                </div>
+                <div>
+                    <span>Nombres y Apellidos:</span><br />
+                    <strong>@estudianteSeleccionado.Nombres @estudianteSeleccionado.Apellidos</strong>
+                </div>
+                <div>
+                    <span>Semestre:</span><br />
+                    <strong>Semestre @estudianteSeleccionado.Semestre</strong>
+                </div>
+                <div>
+                    <span>Estado:</span><br />
+                    <strong>@estudianteSeleccionado.Estado</strong>
+                </div>
+                <div style="grid-column: span 2;">
+                    <span>Carrera:</span><br />
+                    <strong>@(listaCarreras?.FirstOrDefault(c => c.IdCarrera == estudianteSeleccionado.IdCarrera)?.NombreCarrera ?? "No asignada")</strong>
+                </div>
+            </div>
+
+            <!-- Cuadro de asignaturas matriculadas -->
+            <div class="mt-4">
+                <label><strong>Asignaturas Matriculadas:</strong></label>
+                <div style="border: 1px solid #dee2e6; padding: 12px; border-radius: 4px; background-color: #f8f9fa; max-height: 150px; overflow-y: auto;">
+                    @{
+                        var asignaturasUnicas = estudianteSeleccionado.IdsAsignaturasSeleccionadas?.Distinct().ToList();
+                    }
+                    @if (asignaturasUnicas == null || !asignaturasUnicas.Any())
+                    {
+                        <span class="text-muted">Ninguna asignatura matriculada.</span>
+                    }
+                    else
+                    {
+                        <ul style="margin: 0; padding-left: 20px;">
+                            @foreach (var idAsig in asignaturasUnicas)
+                            {
+                                var nombreAsig = todasLasAsignaturas?.FirstOrDefault(a => a.IdAsignatura == idAsig)?.NombreAsignatura;
+                                if (nombreAsig != null)
+                                {
+                                    <li><strong>@nombreAsig</strong></li>
+                                }
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- CONTENIDO PRINCIPAL: FILTROS Y TABLA -->
+    <div class="management-content">
+        <!-- FILTROS LATERALES -->
+        <div class="management-filter">
+            <h5>Filtrar Estudiantes</h5>
+            <div class="mb-3">
+                <label>Buscar</label>
+                <input type="text" class="form-control" @bind="filtroBusqueda" placeholder="Nombre o matrícula..." />
+            </div>
+            <button class="btn-management-search" @onclick="FiltrarEstudiantes">Aplicar Filtros</button>
+            <button class="btn-management-clear" @onclick="LimpiarFiltros">Limpiar</button>
+        </div>
+
+        <!-- TABLA DE DATOS -->
+        <div class="management-table-card">
+            <div class="table-responsive">
+                @if (estudiantesFiltrados == null)
+                {
+                    <div class="management-empty">
+                        <strong>Cargando estudiantes...</strong>
+                    </div>
+                }
+                else if (!estudiantesFiltrados.Any())
+                {
+                    <div class="management-empty">
+                        <strong>No se encontraron registros</strong>
+                        <span>Intenta registrar un nuevo estudiante o ajustar los filtros.</span>
+                    </div>
+                }
+                else
+                {
+                    <table class="management-table">
+                        <thead>
+                            <tr>
+                                <th>MATRÍCULA</th>
+                                <th>NOMBRES</th>
+                                <th>APELLIDOS</th>
+                                <th>SEMESTRE</th>
+                                <th>ESTADO</th>
+                                <th style="text-align: right;">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var estudiante in estudiantesFiltrados)
+                            {
+                                <tr>
+                                    <td><strong>@estudiante.CodigoEstudiante</strong></td>
+                                    <td>@estudiante.Nombres</td>
+                                    <td>@estudiante.Apellidos</td>
+                                    <td>Semestre @estudiante.Semestre</td>
+                                    <td>@estudiante.Estado</td>
+                                    <td class="management-options-cell" style="text-align: right;">
+                                        <div class="management-options">
+                                            <button class="btn-management-new" style="padding: 5px 10px; font-size: 11px;" @onclick="() => AlternarMenu(estudiante.IdEstudiante)">
+                                                Opciones ▾
+                                            </button>
+                                            
+                                            @if (menuAbiertoId == estudiante.IdEstudiante)
+                                            {
+                                                <div class="management-options-menu" style="display: block; position: absolute; right: 0; background: white; border: 1px solid #ccc; z-index: 1000; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);">
+                                                    <button class="dropdown-item" @onclick="() => VerDetalle(estudiante)">Ver Detalle</button>
+                                                    <button class="dropdown-item" @onclick="() => PrepararEditarEstudiante(estudiante)">Editar</button>
+                                                    <button class="dropdown-item text-danger" @onclick="() => ConfirmarEliminar(estudiante)">Eliminar</button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+@if (mostrandoModalEliminar)
+{
+    <div class="confirmation-overlay">
+        <div class="confirmation-modal">
+            <div class="confirmation-icon">!</div>
+            <h3>¿Estás seguro?</h3>
+            <p>Esta acción eliminará al estudiante de forma permanente:</p>
+            
+            <div class="confirmation-detail">
+                <strong>@estudianteAEliminar?.Nombres @estudianteAEliminar?.Apellidos</strong>
+                <span>Matrícula: @estudianteAEliminar?.CodigoEstudiante</span>
+            </div>
+
+            <p class="confirmation-warning">Esta operación no se puede deshacer.</p>
+
+            <div class="confirmation-actions">
+                <button class="btn-confirmation-cancel" @onclick="CancelarEliminacion">Cancelar</button>
+                <button class="btn-confirmation-delete" @onclick="EjecutarEliminacion">Sí, eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public class EstudianteModel
+    {
+        public int IdEstudiante { get; set; }
+        public string CodigoEstudiante { get; set; } = string.Empty;
+        public string Nombres { get; set; } = string.Empty;
+        public string Apellidos { get; set; } = string.Empty;
+        public int Semestre { get; set; } = 1;
+        public string Estado { get; set; } = "Activo";
+        public int IdCarrera { get; set; }
+        public List<int> IdsAsignaturasSeleccionadas { get; set; } = new();
+    }
+
+    public class CarreraModel
+    {
+        public int IdCarrera { get; set; }
+        public string NombreCarrera { get; set; } = string.Empty;
+    }
+
+    public class AsignaturaModel
+    {
+        public int IdAsignatura { get; set; }
+        public string CodigoAsignatura { get; set; } = string.Empty;
+        public string NombreAsignatura { get; set; } = string.Empty;
+        public int Semestre { get; set; }
+    }
+
+    public class DetalleMatriculaModel
+    {
+        public int IdMatricula { get; set; }
+        public int IdEstudiante { get; set; }
+        public int IdAsignatura { get; set; }
+    }
+
+    private List<EstudianteModel>? estudiantes;
+    private List<EstudianteModel>? estudiantesFiltrados;
+    private List<CarreraModel>? listaCarreras;
+    private List<AsignaturaModel>? todasLasAsignaturas;
+
+    private EstudianteModel estudianteActual = new();
+    private EstudianteModel? estudianteSeleccionado;
+    private EstudianteModel? estudianteAEliminar;
+
+    private bool mostrandoFormulario = false;
+    private bool mostrandoDetalle = false;
+    private bool mostrandoModalEliminar = false;
+    private bool esEdicion = false;
+    
+    private int? menuAbiertoId = null;
+    private string filtroBusqueda = string.Empty;
+    private string filtroAsignaturaForm = string.Empty;
+    private string mensaje = string.Empty;
+
+    // Filtra las asignaturas que coinciden con el semestre seleccionado por el estudiante y el texto de búsqueda
+    private IEnumerable<AsignaturaModel> AsignaturasFiltradasPorSemestre =>
+        todasLasAsignaturas == null
+            ? Enumerable.Empty<AsignaturaModel>()
+            : todasLasAsignaturas
+                .Where(a => a.Semestre == estudianteActual.Semestre && 
+                            (string.IsNullOrWhiteSpace(filtroAsignaturaForm) || a.NombreAsignatura.Contains(filtroAsignaturaForm, StringComparison.OrdinalIgnoreCase)));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatosIniciales();
+    }
+
+    private async Task CargarDatosIniciales()
+    {
+        try
+        {
+            mensaje = string.Empty;
+            var listaEstudiantesApi = await Http.GetFromJsonAsync<List<EstudianteModel>>("api/Estudiante");
+            listaCarreras = await Http.GetFromJsonAsync<List<CarreraModel>>("api/Carrera");
+            todasLasAsignaturas = await Http.GetFromJsonAsync<List<AsignaturaModel>>("api/Asignatura");
+            var detallesMatriculaApi = await Http.GetFromJsonAsync<List<DetalleMatriculaModel>>("api/DetalleMatricula");
+
+            if (listaEstudiantesApi != null)
+            {
+                foreach (var est in listaEstudiantesApi)
+                {
+                    var misAsigs = detallesMatriculaApi?
+                        .Where(d => d.IdEstudiante == est.IdEstudiante)
+                        .Select(d => d.IdAsignatura)
+                        .Distinct()
+                        .ToList() ?? new List<int>();
+
+                    est.IdsAsignaturasSeleccionadas = misAsigs;
+                }
+            }
+
+            estudiantes = listaEstudiantesApi;
+            estudiantesFiltrados = estudiantes;
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al conectar con la API: {ex.Message}";
+            estudiantes = new List<EstudianteModel>();
+            estudiantesFiltrados = estudiantes;
+        }
+    }
+
+    private void CambiarSeleccionAsignatura(int idAsignatura, object? valor)
+    {
+        bool marcado = valor is bool b && b;
+        if (marcado)
+        {
+            if (!estudianteActual.IdsAsignaturasSeleccionadas.Contains(idAsignatura))
+                estudianteActual.IdsAsignaturasSeleccionadas.Add(idAsignatura);
+        }
+        else
+        {
+            estudianteActual.IdsAsignaturasSeleccionadas.Remove(idAsignatura);
+        }
+    }
+
+    private void PrepararNuevoEstudiante()
+    {
+        estudianteActual = new EstudianteModel { Estado = "Activo", Semestre = 1 };
+        filtroAsignaturaForm = string.Empty;
+        esEdicion = false;
+        mostrandoFormulario = true;
+        mostrandoDetalle = false;
+        menuAbiertoId = null;
+    }
+
+    private void PrepararEditarEstudiante(EstudianteModel estudiante)
+    {
+        estudianteActual = new EstudianteModel 
+        { 
+            IdEstudiante = estudiante.IdEstudiante, 
+            CodigoEstudiante = estudiante.CodigoEstudiante,
+            Nombres = estudiante.Nombres, 
+            Apellidos = estudiante.Apellidos,
+            Semestre = estudiante.Semestre == 0 ? 1 : estudiante.Semestre,
+            Estado = estudiante.Estado,
+            IdCarrera = estudiante.IdCarrera,
+            IdsAsignaturasSeleccionadas = estudiante.IdsAsignaturasSeleccionadas.Distinct().ToList()
+        };
+        filtroAsignaturaForm = string.Empty;
+        esEdicion = true;
+        mostrandoFormulario = true;
+        mostrandoDetalle = false;
+        menuAbiertoId = null;
+    }
+
+    private void CancelarFormulario()
+    {
+        mostrandoFormulario = false;
+    }
+
+    private async Task GuardarEstudiante()
+    {
+        try
+        {
+            var asignaturasUnicas = estudianteActual.IdsAsignaturasSeleccionadas
+                .Distinct()
+                .Select(idAsig => new { IdAsignatura = idAsig })
+                .ToList();
+
+            var objetoAEnviar = new
+            {
+                estudianteActual.IdEstudiante,
+                estudianteActual.CodigoEstudiante,
+                estudianteActual.Nombres,
+                estudianteActual.Apellidos,
+                estudianteActual.Semestre,
+                estudianteActual.Estado,
+                estudianteActual.IdCarrera,
+                DetalleMatriculas = asignaturasUnicas // O el nombre que use tu API backend para la tabla DetalleMatricula
+            };
+
+            if (esEdicion)
+            {
+                await Http.PutAsJsonAsync($"api/Estudiante/{estudianteActual.IdEstudiante}", objetoAEnviar);
+                mensaje = "Estudiante actualizado exitosamente.";
+            }
+            else
+            {
+                await Http.PostAsJsonAsync("api/Estudiante", objetoAEnviar);
+                mensaje = "Estudiante registrado exitosamente.";
+            }
+
+            mostrandoFormulario = false;
+            await CargarDatosIniciales();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Ocurrió un error al guardar: {ex.Message}";
+        }
+    }
+
+    private void VerDetalle(EstudianteModel estudiante)
+    {
+        estudianteSeleccionado = estudiante;
+        mostrandoDetalle = true;
+        mostrandoFormulario = false;
+        menuAbiertoId = menuAbiertoId;
+    }
+
+    private void CerrarDetalle()
+    {
+        mostrandoDetalle = false;
+        estudianteSeleccionado = null;
+    }
+
+    private void ConfirmarEliminar(EstudianteModel estudiante)
+    {
+        estudianteAEliminar = estudiante;
+        mostrandoModalEliminar = true;
+        menuAbiertoId = null;
+    }
+
+    private void CancelarEliminacion()
+    {
+        mostrandoModalEliminar = false;
+        estudianteAEliminar = null;
+    }
+
+    private async Task EjecutarEliminacion()
+    {
+        if (estudianteAEliminar != null)
+        {
+            try
+            {
+                await Http.DeleteAsync($"api/Estudiante/{estudianteAEliminar.IdEstudiante}");
+                mensaje = "Estudiante eliminado correctamente.";
+                await CargarDatosIniciales();
+            }
+            catch (Exception)
+            {
+                mensaje = "Error al intentar eliminar el estudiante.";
+            }
+        }
+        mostrandoModalEliminar = false;
+        estudianteAEliminar = null;
+    }
+
+    private void AlternarMenu(int id)
+    {
+        menuAbiertoId = menuAbiertoId == id ? null : id;
+    }
+
+    private void FiltrarEstudiantes()
+    {
+        if (string.IsNullOrWhiteSpace(filtroBusqueda))
+        {
+            estudiantesFiltrados = estudiantes;
+        }
+        else
+        {
+            estudiantesFiltrados = estudiantes?
+                .Where(e => e.Nombres.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                            e.Apellidos.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase) ||
+                            e.CodigoEstudiante.Contains(filtroBusqueda, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void LimpiarFiltros()
+    {
+        filtroBusqueda = string.Empty;
+        estudiantesFiltrados = estudiantes;
+    }
+}

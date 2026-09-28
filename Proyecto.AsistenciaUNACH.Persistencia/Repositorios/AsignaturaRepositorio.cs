@@ -15,57 +15,36 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
             _context = context;
         }
 
-        public async Task<List<Asignatura>> ObtenerTodas()
+        public async Task<IEnumerable<Asignatura>> ObtenerAsignaturasAsync()
         {
-            return await _context.Asignaturas
-                .ToListAsync();
+            return await _context.Asignaturas.ToListAsync();
         }
 
-        public async Task<Asignatura?> ObtenerPorId(int id)
+        public async Task<Asignatura?> ObtenerAsignaturaPorIdAsync(int id)
         {
-            return await _context.Asignaturas
-                .FirstOrDefaultAsync(a => a.IdAsignatura == id);
+            return await _context.Asignaturas.FindAsync(id);
         }
 
-        public async Task<Asignatura> Crear(Asignatura asignatura)
+        public async Task AgregarAsignaturaAsync(Asignatura asignatura)
         {
             _context.Asignaturas.Add(asignatura);
-
             await _context.SaveChangesAsync();
-
-            return asignatura;
         }
 
-        public async Task<bool> Actualizar(Asignatura asignatura)
+        public async Task ActualizarAsignaturaAsync(Asignatura asignatura)
         {
-            var existente = await _context.Asignaturas
-                .FirstOrDefaultAsync(a => a.IdAsignatura == asignatura.IdAsignatura);
-
-            if (existente == null)
-                return false;
-
-            existente.CodigoAsignatura = asignatura.CodigoAsignatura;
-            existente.NombreAsignatura = asignatura.NombreAsignatura;
-            existente.Semestre = asignatura.Semestre;
-
+            _context.Asignaturas.Update(asignatura);
             await _context.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> Eliminar(int id)
+        public async Task EliminarAsignaturaAsync(int id)
         {
-            var asignatura = await _context.Asignaturas
-                .FirstOrDefaultAsync(a => a.IdAsignatura == id);
-
-            if (asignatura == null)
-                return false;
-
-            _context.Asignaturas.Remove(asignatura);
-
-            await _context.SaveChangesAsync();
-
-            return true;
+            var asignatura = await _context.Asignaturas.FindAsync(id);
+            if (asignatura != null)
+            {
+                _context.Asignaturas.Remove(asignatura);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

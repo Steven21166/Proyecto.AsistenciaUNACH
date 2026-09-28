@@ -7,14 +7,10 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
 {
     public interface ICarreraRepositorio
     {
-        Task<List<Carrera>> ObtenerTodas();
-
-        Task<Carrera?> ObtenerPorId(int id);
-
-        Task<Carrera> Crear(Carrera carrera);
-
-        Task<bool> Actualizar(Carrera carrera);
-
-        Task<bool> Eliminar(int id);
+        Task<IEnumerable<Carrera>> ObtenerCarrerasAsync();
+        Task<Carrera?> ObtenerCarreraPorIdAsync(int id);
+        Task AgregarCarreraAsync(Carrera carrera);
+        Task ActualizarCarreraAsync(Carrera carrera);
+        Task EliminarCarreraAsync(int id);
     }
 }

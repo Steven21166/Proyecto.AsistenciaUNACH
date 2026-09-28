@@ -3,27 +3,27 @@
 using System;
 using System.Collections.Generic;
 
-namespace Proyecto.AsistenciaUNACH.DemoConsola.Models;
+namespace Proyecto.AsistenciaUNACH.Persistencia.Models;
 
-public partial class Docente
+public partial class Estudiante
 {
-    public int IdDocente { get; set; }
+    public int IdEstudiante { get; set; }
+
+    public string CodigoEstudiante { get; set; }
 
     public string Nombres { get; set; }
 
     public string Apellidos { get; set; }
 
-    public string Cedula { get; set; }
+    public int Semestre { get; set; }
 
-    public string Celular { get; set; }
-
-    public string Correo { get; set; }
+    public string Estado { get; set; }
 
     public int IdCarrera { get; set; }
 
     public virtual ICollection<AsistenciaEstudiante> AsistenciaEstudiantes { get; set; } = new List<AsistenciaEstudiante>();
 
-    public virtual ICollection<DocenteAsignatura> DocenteAsignaturas { get; set; } = new List<DocenteAsignatura>();
+    public virtual ICollection<DetalleMatricula> DetalleMatriculas { get; set; } = new List<DetalleMatricula>();
 
     public virtual Carrera IdCarreraNavigation { get; set; }
 }

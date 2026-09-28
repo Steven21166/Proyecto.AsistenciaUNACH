@@ -18,4 +18,6 @@ public partial class Carrera
     public string Modalidad { get; set; }
 
     public virtual ICollection<Docente> Docentes { get; set; } = new List<Docente>();
+
+    public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 }

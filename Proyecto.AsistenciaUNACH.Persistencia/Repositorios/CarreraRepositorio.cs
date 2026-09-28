@@ -15,58 +15,36 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
             _context = context;
         }
 
-        public async Task<List<Carrera>> ObtenerTodas()
+        public async Task<IEnumerable<Carrera>> ObtenerCarrerasAsync()
         {
-            return await _context.Carreras
-                .ToListAsync();
+            return await _context.Carreras.ToListAsync();
         }
 
-        public async Task<Carrera?> ObtenerPorId(int id)
+        public async Task<Carrera?> ObtenerCarreraPorIdAsync(int id)
         {
-            return await _context.Carreras
-                .FirstOrDefaultAsync(c => c.IdCarrera == id);
+            return await _context.Carreras.FindAsync(id);
         }
 
-        public async Task<Carrera> Crear(Carrera carrera)
+        public async Task AgregarCarreraAsync(Carrera carrera)
         {
             _context.Carreras.Add(carrera);
-
             await _context.SaveChangesAsync();
-
-            return carrera;
         }
 
-        public async Task<bool> Actualizar(Carrera carrera)
+        public async Task ActualizarCarreraAsync(Carrera carrera)
         {
-            var existente = await _context.Carreras
-                .FirstOrDefaultAsync(c => c.IdCarrera == carrera.IdCarrera);
-
-            if (existente == null)
-                return false;
-
-            existente.CodigoCarrera = carrera.CodigoCarrera;
-            existente.NombreCarrera = carrera.NombreCarrera;
-            existente.Facultad = carrera.Facultad;
-            existente.Modalidad = carrera.Modalidad;
-
+            _context.Carreras.Update(carrera);
             await _context.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> Eliminar(int id)
+        public async Task EliminarCarreraAsync(int id)
         {
-            var carrera = await _context.Carreras
-                .FirstOrDefaultAsync(c => c.IdCarrera == id);
-
-            if (carrera == null)
-                return false;
-
-            _context.Carreras.Remove(carrera);
-
-            await _context.SaveChangesAsync();
-
-            return true;
+            var carrera = await _context.Carreras.FindAsync(id);
+            if (carrera != null)
+            {
+                _context.Carreras.Remove(carrera);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

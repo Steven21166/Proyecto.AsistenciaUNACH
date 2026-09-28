@@ -19,8 +19,7 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Asignatura>>> ObtenerTodas()
         {
-            var asignaturas = await _asignaturaRepositorio.ObtenerTodas();
-
+            var asignaturas = await _asignaturaRepositorio.ObtenerAsignaturasAsync();
             return Ok(asignaturas);
         }
 
@@ -28,7 +27,7 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Asignatura>> ObtenerPorId(int id)
         {
-            var asignatura = await _asignaturaRepositorio.ObtenerPorId(id);
+            var asignatura = await _asignaturaRepositorio.ObtenerAsignaturaPorIdAsync(id);
 
             if (asignatura == null)
                 return NotFound();
@@ -40,30 +39,30 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpPost]
         public async Task<ActionResult<Asignatura>> Crear(Asignatura asignatura)
         {
-            var nuevaAsignatura =
-                await _asignaturaRepositorio.Crear(asignatura);
+            await _asignaturaRepositorio.AgregarAsignaturaAsync(asignatura);
 
             return CreatedAtAction(
                 nameof(ObtenerPorId),
-                new { id = nuevaAsignatura.IdAsignatura },
-                nuevaAsignatura
+                new { id = asignatura.IdAsignatura },
+                asignatura
             );
         }
 
         // PUT: api/Asignatura/1
         [HttpPut("{id}")]
-        public async Task<IActionResult> Actualizar(
-            int id,
-            Asignatura asignatura)
+        public async Task<IActionResult> Actualizar(int id, Asignatura asignatura)
         {
             if (id != asignatura.IdAsignatura)
                 return BadRequest();
 
-            var actualizado =
-                await _asignaturaRepositorio.Actualizar(asignatura);
-
-            if (!actualizado)
+            try
+            {
+                await _asignaturaRepositorio.ActualizarAsignaturaAsync(asignatura);
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }
@@ -72,11 +71,14 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Eliminar(int id)
         {
-            var eliminado =
-                await _asignaturaRepositorio.Eliminar(id);
-
-            if (!eliminado)
+            try
+            {
+                await _asignaturaRepositorio.EliminarAsignaturaAsync(id);
+            }
+            catch
+            {
                 return NotFound();
+            }
 
             return NoContent();
         }

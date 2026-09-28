@@ -15,69 +15,40 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
             _context = context;
         }
 
-        public async Task<List<Docente>> ObtenerTodos()
+        public async Task<IEnumerable<Docente>> ObtenerDocentesAsync()
         {
             return await _context.Docentes
                 .Include(d => d.IdCarreraNavigation)
-                .Include(d => d.IdAsignaturaNavigation)
                 .ToListAsync();
         }
 
-        public async Task<Docente?> ObtenerPorId(int id)
+        public async Task<Docente?> ObtenerDocentePorIdAsync(int id)
         {
             return await _context.Docentes
                 .Include(d => d.IdCarreraNavigation)
-                .Include(d => d.IdAsignaturaNavigation)
                 .FirstOrDefaultAsync(d => d.IdDocente == id);
         }
 
-        public async Task<Docente> Crear(Docente docente)
+        public async Task AgregarDocenteAsync(Docente docente)
         {
             _context.Docentes.Add(docente);
-
             await _context.SaveChangesAsync();
-
-            return docente;
         }
 
-        public async Task<bool> Actualizar(Docente docente)
+        public async Task ActualizarDocenteAsync(Docente docente)
         {
-            var existente = await _context.Docentes
-                .FirstOrDefaultAsync(d => d.IdDocente == docente.IdDocente);
-
-            if (existente == null)
-                return false;
-
-            existente.Nombres = docente.Nombres;
-            existente.Apellidos = docente.Apellidos;
-            existente.Cedula = docente.Cedula;
-            existente.Celular = docente.Celular;
-            existente.Correo = docente.Correo;
-            existente.IdCarrera = docente.IdCarrera;
-            existente.IdAsignatura = docente.IdAsignatura;
-            existente.FechaAsistencia = docente.FechaAsistencia;
-            existente.HoraEntrada = docente.HoraEntrada;
-            existente.HoraSalida = docente.HoraSalida;
-            existente.EstadoAsistencia = docente.EstadoAsistencia;
-
+            _context.Docentes.Update(docente);
             await _context.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> Eliminar(int id)
+        public async Task EliminarDocenteAsync(int id)
         {
-            var docente = await _context.Docentes
-                .FirstOrDefaultAsync(d => d.IdDocente == id);
-
-            if (docente == null)
-                return false;
-
-            _context.Docentes.Remove(docente);
-
-            await _context.SaveChangesAsync();
-
-            return true;
+            var docente = await _context.Docentes.FindAsync(id);
+            if (docente != null)
+            {
+                _context.Docentes.Remove(docente);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }
