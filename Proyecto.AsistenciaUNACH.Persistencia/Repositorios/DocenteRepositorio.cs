@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Proyecto.AsistenciaUNACH.Persistencia.Models;
 
@@ -19,6 +20,8 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
         {
             return await _context.Docentes
                 .Include(d => d.IdCarreraNavigation)
+                .Include(d => d.DocenteAsignaturas)
+                    .ThenInclude(da => da.IdAsignaturaNavigation) // Carga la materia relacionada
                 .ToListAsync();
         }
 
@@ -26,6 +29,8 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Repositorios
         {
             return await _context.Docentes
                 .Include(d => d.IdCarreraNavigation)
+                .Include(d => d.DocenteAsignaturas)
+                    .ThenInclude(da => da.IdAsignaturaNavigation) // Carga la materia relacionada
                 .FirstOrDefaultAsync(d => d.IdDocente == id);
         }
 

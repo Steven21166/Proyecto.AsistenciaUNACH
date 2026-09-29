@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Proyecto.AsistenciaUNACH.Persistencia.Models;
 using Proyecto.AsistenciaUNACH.Persistencia.Repositorios;
 
@@ -39,14 +40,38 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
             return Ok(docente);
         }
 
+        // GET: api/Docente/login?correo=...&cedula=...
+        [HttpGet("login")]
+        public async Task<ActionResult<Docente>> LoginDocente([FromQuery] string correo, [FromQuery] string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(correo) || string.IsNullOrWhiteSpace(cedula))
+            {
+                return BadRequest(new { mensaje = "El correo y la cédula son obligatorios." });
+            }
+
+            var docentes = await _docenteRepositorio.ObtenerDocentesAsync();
+
+            var docente = docentes.FirstOrDefault(d =>
+                !string.IsNullOrEmpty(d.Correo) &&
+                !string.IsNullOrEmpty(d.Cedula) &&
+                d.Correo.Trim().ToLower() == correo.Trim().ToLower() &&
+                d.Cedula.Trim() == cedula.Trim()
+            );
+
+            if (docente == null)
+            {
+                return Unauthorized(new { mensaje = "Credenciales incorrectas (Correo o Cédula inválidos)." });
+            }
+
+            return Ok(docente);
+        }
+
         // POST: api/Docente
         [HttpPost]
         public async Task<ActionResult<Docente>> Crear(Docente docente)
         {
-            // 1. Guardamos primero el docente para obtener su IdDocente generado
             await _docenteRepositorio.AgregarDocenteAsync(docente);
 
-            // 2. Si vienen asignaturas asociadas en la colección, las registramos
             if (docente.DocenteAsignaturas != null && docente.DocenteAsignaturas.Any())
             {
                 foreach (var asignacion in docente.DocenteAsignaturas)
@@ -73,9 +98,6 @@ namespace Proyecto.AsistenciaUNACH.ApiAsistencia.Controllers
             try
             {
                 await _docenteRepositorio.ActualizarDocenteAsync(docente);
-
-                // Opcional si en tu actualización de Blazor manejas también la lista de asignaturas:
-                // Puedes limpiar las anteriores y volver a registrar las nuevas si tu lógica lo requiere.
             }
             catch
             {
