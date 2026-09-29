@@ -7,7 +7,7 @@ namespace Proyecto.AsistenciaUNACH.Persistencia.Models;
 
 public partial class AsistenciaEstudiante
 {
-    public int IdAsistencia { get; set; }
+    public int? IdAsistencia { get; set; }
 
     public int IdEstudiante { get; set; }
 
